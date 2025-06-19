@@ -1,0 +1,30 @@
+NotImplementedError: Pandas installation is required if no dataframe is provided.
+Traceback:
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+             ^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 669, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/runner/workspace/crisis_radar_production.py", line 1279, in <module>
+    main()
+File "/home/runner/workspace/crisis_radar_production.py", line 1123, in main
+    pie_fig, bar_fig, location_fig = create_analytics_charts(filtered_data)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/runner/workspace/crisis_radar_production.py", line 873, in create_analytics_charts
+    fig_pie = px.pie(
+              ^^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/plotly/express/_chart_types.py", line 1701, in pie
+    return make_figure(
+           ^^^^^^^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/plotly/express/_core.py", line 2483, in make_figure
+    args = build_dataframe(args, constructor)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/plotly/express/_core.py", line 1729, in build_dataframe
+    df_output, wide_id_vars = process_args_into_dataframe(
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/plotly/express/_core.py", line 1382, in process_args_into_dataframe
+    df_output[str(col_name)] = to_named_series(
+                               ^^^^^^^^^^^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/plotly/express/_core.py", line 1189, in to_named_series
+    raise NotImplementedError(msg)
