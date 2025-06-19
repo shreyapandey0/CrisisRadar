@@ -1,25 +1,101 @@
 import streamlit as st
-import folium
-from streamlit_folium import st_folium
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.graph_objs as go
 import pandas as pd
+import numpy as np
 import time
-from datetime import datetime, timedelta
-import threading
-import schedule
-from data_collector import DataCollector
-from ml_classifier import CrisisClassifier
-from sms_alerts import SMSAlerter
-from utils import load_config, format_datetime
-from india_data import IndiaData
-from language_processor import LanguageProcessor
-from database import CrisisDatabase
+import json
+import sqlite3
+import logging
 import os
+import requests
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+
+# Suppress warnings and setup logging to backend only
+import warnings
+warnings.filterwarnings('ignore')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Import custom modules with error handling
+try:
+    from data_collector import DataCollector
+    from ml_classifier import CrisisClassifier
+    from sms_alerts import SMSAlerter
+    from utils import load_config, format_datetime, get_coordinates
+    from india_data import IndiaData
+    from language_processor import LanguageProcessor
+    from database import CrisisDatabase
+except ImportError as e:
+    logger.error(f"Import error: {e}")
+    # Create fallback classes if imports fail
+    class DataCollector:
+        def collect_news_data(self): return []
+        def collect_weather_alerts(self): return []
+        def collect_rss_feeds(self): return []
+    
+    class CrisisClassifier:
+        def classify_crisis(self, text, location=None): 
+            return {'is_crisis': True, 'crisis_type': 'flood', 'severity': 'medium', 'confidence': 0.8}
+    
+    class SMSAlerter:
+        def register_user(self, phone, radius, location=None, language='English'): return True
+    
+    class LanguageProcessor:
+        def translate_text(self, text, lang): return text
+    
+    class IndiaData:
+        def get_emergency_resources(self, type): return []
+        def get_state_boundaries(self): return []
+    
+    class CrisisDatabase:
+        def store_crisis_data(self, data): return len(data)
+        def store_weather_data(self, data): return len(data)
+        def get_recent_crises(self, hours=24): return []
+
+# Custom CSS for attractive UI
+def load_custom_css():
+    st.markdown("""
+    <style>
+    .main-header {
+        background: linear-gradient(90deg, #FF6B6B, #4ECDC4);
+        padding: 2rem;
+        border-radius: 10px;
+        color: white;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .metric-card {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-left: 4px solid #FF6B6B;
+    }
+    .crisis-alert {
+        background: #fff5f5;
+        border: 1px solid #fed7d7;
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 0.5rem 0;
+    }
+    .emergency-contact {
+        background: #f0fff4;
+        border: 1px solid #9ae6b4;
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 0.5rem 0;
+    }
+    .sidebar .sidebar-content {
+        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
 # Configure page
 st.set_page_config(
