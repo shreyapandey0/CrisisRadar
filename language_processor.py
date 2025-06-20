@@ -1,9 +1,10 @@
 import os
 from typing import Dict, List, Any, Optional
 import logging
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 import re
 import json
+from langdetect import detect, LangDetectException
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 class LanguageProcessor:
     def __init__(self):
         """Initialize language processor with translation capabilities"""
-        self.translator = Translator()
+        self.translator = GoogleTranslator(source='auto', target='en')
         
         # Supported Indian languages
         self.supported_languages = {
@@ -87,19 +88,18 @@ class LanguageProcessor:
         """Detect the language of given text"""
         try:
             if not text or not text.strip():
-                return 'en'
+                return 'English'
             
-            detection = self.translator.detect(text)
-            detected_lang = detection.lang
+            detected_lang_code = detect(text)
             
-            # Map detected language to our supported languages
+            # Map detected language code to supported languages
             for lang_name, lang_code in self.supported_languages.items():
-                if lang_code == detected_lang:
+                if lang_code == detected_lang_code:
                     return lang_name
             
             return 'English'  # Default fallback
             
-        except Exception as e:
+        except LangDetectException as e:
             logger.error(f"Error detecting language: {str(e)}")
             return 'English'
     
@@ -121,14 +121,15 @@ class LanguageProcessor:
             # Check cache first
             cache_key = f"{text}_{target_language}"
             if cache_key in self.translation_cache:
+                logger.info(f"Cache hit for translation: {cache_key} -> {self.translation_cache[cache_key]}")
                 return self.translation_cache[cache_key]
             
             # Get target language code
             target_code = self.supported_languages[target_language]
             
-            # Perform translation
-            translation = self.translator.translate(text, dest=target_code)
-            translated_text = translation.text
+            # Perform translation using deep-translator
+            translated_text = GoogleTranslator(source='auto', target=target_code).translate(text)
+            logger.info(f"Translating text: '{text}' to '{target_language}' ({target_code}) -> '{translated_text}'")
             
             # Cache the translation
             self.translation_cache[cache_key] = translated_text
@@ -142,6 +143,7 @@ class LanguageProcessor:
     def translate_crisis_data(self, crisis_data: Dict[str, Any], target_language: str) -> Dict[str, Any]:
         """Translate crisis data to target language"""
         try:
+            logger.info(f"translate_crisis_data called with target_language: {target_language} and crisis_data: {crisis_data}")
             if target_language == 'English':
                 return crisis_data
             
@@ -164,31 +166,30 @@ class LanguageProcessor:
             
         except Exception as e:
             logger.error(f"Error translating crisis data: {str(e)}")
-            return crisis_data
-    
+            return crisis_data    
     def translate_crisis_type(self, crisis_type: str, target_language: str) -> str:
-        """Translate crisis type to target language"""
-        crisis_translations = {
-            'English': {
-                'flood': 'Flood',
-                'earthquake': 'Earthquake', 
-                'cyclone': 'Cyclone',
-                'fire': 'Fire',
-                'drought': 'Drought',
-                'landslide': 'Landslide',
-                'accident': 'Accident',
-                'storm': 'Storm'
-            },
-            'Hindi': {
-                'flood': 'बाढ़',
-                'earthquake': 'भूकंप',
-                'cyclone': 'चक्रवात',
-                'fire': 'आग',
-                'drought': 'सूखा',
-                'landslide': 'भूस्खलन',
-                'accident': 'दुर्घटना',
-                'storm': 'तूफान'
-            },
+       """Translate crisis type to target language"""
+       crisis_translations = {
+           'English': {
+               'flood': 'Flood',
+               'earthquake': 'Earthquake', 
+               'cyclone': 'Cyclone',
+               'fire': 'Fire',
+               'drought': 'Drought',
+               'landslide': 'Landslide',
+               'accident': 'Accident',
+               'storm': 'Storm'
+           },
+           'Hindi': {
+               'flood': 'बाढ़',
+               'earthquake': 'भूकंप',
+               'cyclone': 'चक्रवात',
+               'fire': 'आग',
+               'drought': 'सूखा',
+               'landslide': 'भूस्खलन',
+               'accident': 'दुर्घटना',
+               'storm': 'तूफान'
+           },
             'Bengali': {
                 'flood': 'বন্যা',
                 'earthquake': 'ভূমিকম্প',
@@ -221,8 +222,8 @@ class LanguageProcessor:
             }
         }
         
-        translations = crisis_translations.get(target_language, {})
-        return translations.get(crisis_type.lower(), crisis_type.title())
+       translations = crisis_translations.get(target_language, {})
+       return translations.get(crisis_type.lower(), crisis_type.title())
     
     def detect_crisis_in_regional_text(self, text: str, language: str = None) -> Dict[str, Any]:
         """Detect crisis-related content in regional language text"""
@@ -296,6 +297,7 @@ class LanguageProcessor:
     def process_multilingual_rss(self, rss_content: str) -> Dict[str, Any]:
         """Process RSS content that may be in regional languages"""
         try:
+            logger.info(f"process_multilingual_rss called with rss_content: {rss_content[:100]}...")
             # Detect language
             detected_language = self.detect_language(rss_content)
             

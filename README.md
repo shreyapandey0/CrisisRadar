@@ -1,202 +1,128 @@
-# CrisisRadar - India Crisis Detection System
+# CrisisRadar — Real-Time Local Crisis Detection & Resource Mapping
 
-## Overview
+## Project Overview
 
-CrisisRadar is a comprehensive real-time crisis detection and monitoring system specifically designed for India. The system integrates multiple news APIs, government RSS feeds, machine learning classification, and multilingual capabilities to provide crisis detection, severity assessment, and emergency alerts across the Indian subcontinent.
+CrisisRadar is an advanced real-time crisis detection and resource mapping system designed to monitor and respond to local disasters across India and select neighboring countries. It integrates multiple news and weather APIs, uses machine learning and natural language processing (NLP) for crisis classification, supports multiple Indian languages, and provides an interactive Streamlit dashboard for visualization and alerts.
 
 ## Features
 
-### Core Functionality
-- **Real-time Crisis Detection**: Monitors multiple news APIs and RSS feeds for crisis events
-- **AI-Powered Classification**: Detects 8 types of crises (flood, earthquake, cyclone, fire, drought, landslide, storm, accident)
-- **Severity Assessment**: Classifies events as high, medium, or low severity with confidence scoring
-- **Interactive Map**: Live crisis visualization on India map with detailed markers
-- **Advanced Analytics**: Comprehensive charts showing crisis distribution and trends
-- **SMS Alerts**: Twilio-powered emergency notifications for registered users
-- **Multilingual Support**: 6+ Indian languages including Hindi, Bengali, Tamil, Telugu
+- Real-time detection of local crises such as floods, earthquakes, cyclones, fires, droughts, landslides, and accidents.
+- Aggregates data from multiple sources: MediaStack, NewsAPI, NewsData.io, Weatherstack, and government RSS feeds.
+- Multilingual support with planned NLP classification in English, Hindi, Bengali, Tamil, and more.
+- Interactive and attractive Streamlit dashboard with:
+  - Live crisis map with severity-based markers and weather alerts.
+  - Emergency resource layers including hospitals, police stations, and shelters.
+  - Advanced analytics charts for crisis type, severity, and location distribution.
+  - Live crisis intelligence feed with detailed alerts.
+  - Emergency resources and preparedness guides.
+- SMS alert registration and notification system via Twilio.
+- Backend logging and error handling with no frontend error/success messages.
 
-### Data Sources
-- **News APIs**: MediaStack, NewsData.io, NewsAPI
-- **Government RSS**: IMD (Weather), NDMA (Disasters), PIB (Government)
-- **Weather Monitoring**: Weatherstack API for extreme weather detection
-- **Regional Sources**: Major Indian news outlets and government feeds
+## Project Structure
 
-### Technical Architecture
-- **Frontend**: Streamlit web application with enhanced UI
-- **Backend**: Python-based data processing and ML classification
-- **Database**: SQLite for data persistence and historical analysis
-- **APIs**: RESTful integration with multiple external services
-- **Alerts**: SMS notifications via Twilio integration
+- `crisis_radar_production.py`: Main Streamlit application with UI, map visualization, data collection, and alert registration.
+- `data_collector.py`: Handles API data fetching and aggregation.
+- `ml_classifier.py`: Contains machine learning and NLP models for crisis classification.
+- `language_processor.py`: Language translation and processing utilities.
+- `sms_alerts.py`: SMS alert sending via Twilio.
+- `database.py`: SQLite database management and schema.
+- `india_data.py`: Coordinates and location data for Indian cities and states.
+- `utils.py`: Utility functions used across the project.
+- `.env`: Environment variables including API keys and Twilio credentials.
+- `crisis_radar_production.db`: SQLite database file storing crisis and weather data.
 
-## Quick Start
+## Algorithm & Workflow
+
+1. **Data Collection**: Periodically fetches news and weather data from multiple APIs and RSS feeds.
+2. **Crisis Detection**: Uses keyword matching and ML/NLP classification to identify crisis-related events.
+3. **Location Extraction**: Extracts and geocodes locations mentioned in news articles.
+4. **Data Storage**: Stores crisis events, weather alerts, and user registrations in SQLite database.
+5. **Visualization**: Displays live crisis data on an interactive map with severity-based markers and emergency resource layers.
+6. **Analytics**: Provides charts summarizing crisis types, severity, and affected locations.
+7. **Alerts**: Allows users to register for SMS alerts based on location and language preferences.
+8. **Multilingual Support**: Plans to translate and classify news in multiple Indian languages for inclusiveness.
+
+## Tech Stack
+
+- Python 3.13
+- Streamlit for frontend dashboard
+- Plotly for interactive map and charts
+- SQLite for local data storage
+- Requests and Feedparser for API and RSS data fetching
+- Twilio API for SMS alerts
+- dotenv for environment variable management
+
+## Setup & Running Locally
 
 ### Prerequisites
-- Python 3.11+
-- API keys for external services (see Configuration section)
 
-### Installation
-```bash
-# Clone repository
-git clone <repository-url>
-cd crisisradar
+- Python 3.13 installed
+- API keys for MediaStack, NewsAPI, NewsData.io, Weatherstack
+- Twilio account with SID, Auth Token, and phone number
 
-# Install dependencies
-pip install -r requirements.txt
+### Installation Steps
 
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your API keys
-```
+1. Clone the repository:
 
-### Running the Application
-```bash
-streamlit run crisis_radar_production.py --server.port 5000
-```
+   ```
+   git clone <repository_url>
+   cd CrisisIntelMapper
+   ```
 
-The application will be available at `http://localhost:5000`
+2. Create and activate a virtual environment:
 
-## Configuration
+   ```
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
 
-### Required API Keys
-Create a `.env` file with the following variables:
+3. Install required packages:
 
-```env
-# News APIs
-NEWSAPI_KEY=your_newsapi_key_here
-MEDIASTACK_KEY=your_mediastack_key_here
-NEWSDATA_KEY=your_newsdata_key_here
+   ```
+   pip install -r requirements.txt
+   ```
 
-# Weather API
-WEATHERSTACK_KEY=your_weatherstack_key_here
+4. Create a `.env` file in the project root with your API keys and Twilio credentials:
 
-# SMS Alerts (Twilio)
-TWILIO_ACCOUNT_SID=your_twilio_account_sid
-TWILIO_AUTH_TOKEN=your_twilio_auth_token
-TWILIO_PHONE_NUMBER=your_twilio_phone_number
-```
+   ```
+   NEWSAPI_KEY=your_newsapi_key
+   MEDIASTACK_KEY=your_mediastack_key
+   NEWSDATA_KEY=your_newsdata_key
+   WEATHERSTACK_KEY=your_weatherstack_key
+   TWILIO_ACCOUNT_SID=your_twilio_sid
+   TWILIO_AUTH_TOKEN=your_twilio_auth_token
+   TWILIO_PHONE_NUMBER=your_twilio_phone_number
+   ```
 
-### API Key Setup
-1. **NewsAPI**: Get free API key from [newsapi.org](https://newsapi.org)
-2. **MediaStack**: Register at [mediastack.com](https://mediastack.com)
-3. **NewsData.io**: Sign up at [newsdata.io](https://newsdata.io)
-4. **Weatherstack**: Get API key from [weatherstack.com](https://weatherstack.com)
-5. **Twilio**: Create account at [twilio.com](https://twilio.com) for SMS alerts
+5. Run the Streamlit app:
 
-## Usage Guide
+   ```
+   streamlit run crisis_radar_production.py
+   ```
 
-### Dashboard Navigation
-1. **Live Crisis Map**: Interactive map showing real-time crisis events
-2. **Analytics**: Charts and statistics about crisis distribution
-3. **Crisis Intelligence**: Detailed feed of detected crisis events
-4. **Emergency Resources**: Contact numbers and preparedness information
+6. Open the URL shown in the terminal (usually http://localhost:8501) in your browser.
 
-### Data Collection
-- Click "Collect Live Data" to fetch real-time crisis information
-- Use "Load Stored Data" to view historical events
-- Apply filters to focus on specific crisis types or severity levels
+### Usage
 
-### SMS Alerts
-1. Navigate to SMS Alerts section in sidebar
-2. Enter phone number in international format (+91XXXXXXXXXX)
-3. Select your location and alert radius
-4. Choose preferred language
-5. Click "Register for SMS Alerts"
+- Use the sidebar to test API connections, collect live data, or load stored data.
+- Apply filters for crisis types, severity, and confidence threshold.
+- Register for SMS alerts with your phone number and location.
+- Explore the live crisis map, analytics, intelligence feed, and emergency resources tabs.
 
-### Filters and Settings
-- **Crisis Types**: Filter by specific disaster types
-- **Severity Levels**: Focus on high, medium, or low severity events
-- **Confidence Threshold**: Adjust minimum confidence for detection
-- **Language**: Select interface language
+## Notes
 
-## System Architecture
+- The system currently supports India and plans to extend to neighboring countries.
+- The map includes major cities, crisis events by severity, weather alerts, and emergency resources.
+- All error and success messages are logged in the backend; the frontend remains clean.
+- The project uses free-tier API plans; rate limits may apply.
 
-### Components
-- **crisis_radar_production.py**: Main application file with integrated functionality
-- **Database Schema**: SQLite tables for crisis events, weather alerts, and user registrations
-- **API Integration**: Multi-source data collection with error handling
-- **ML Classification**: Keyword-based crisis detection and severity assessment
+## Future Enhancements
 
-### Data Flow
-1. **Collection**: APIs and RSS feeds provide raw news data
-2. **Processing**: Text analysis and India-specific filtering
-3. **Classification**: ML models detect crisis type and severity
-4. **Storage**: Events stored in SQLite database
-5. **Visualization**: Real-time updates to map and analytics
-6. **Alerts**: SMS notifications sent to relevant users
-
-## API Status and Monitoring
-
-The system provides real-time API status monitoring:
-- **MediaStack**: Primary news source (most reliable)
-- **NewsData.io**: Secondary news source
-- **NewsAPI**: Rate-limited free tier
-- **Weatherstack**: Weather data and alerts
-
-Use "Test API Connections" to verify all services are operational.
-
-## Crisis Types Detected
-
-1. **Flood**: Flooding, waterlogging, inundation
-2. **Earthquake**: Seismic activity, tremors
-3. **Cyclone**: Hurricanes, typhoons, severe storms
-4. **Fire**: Wildfires, building fires, industrial fires
-5. **Drought**: Water shortages, dry conditions
-6. **Landslide**: Mudslides, slope failures
-7. **Storm**: Thunderstorms, hailstorms, dust storms
-8. **Accident**: Transportation, industrial, building accidents
-
-## Emergency Contacts
-
-### National Emergency Numbers
-- **Police**: 100
-- **Fire Brigade**: 101
-- **Ambulance**: 108
-- **Disaster Management**: 1078
-- **Tourist Helpline**: 1363
-
-### Specialized Helplines
-- **Women Helpline**: 1091
-- **Child Helpline**: 1098
-- **Senior Citizen**: 14567
-- **Mental Health**: 9152987821
-
-## Troubleshooting
-
-### Common Issues
-1. **No Data Appearing**: Check API keys in .env file
-2. **Rate Limit Errors**: Wait for rate limit reset or upgrade API plan
-3. **Map Not Loading**: Verify internet connection and refresh page
-4. **SMS Alerts Not Working**: Verify Twilio credentials and phone number format
-
-### API Rate Limits
-- **NewsAPI**: 100 requests/day (free tier)
-- **MediaStack**: 500 requests/month (free tier)
-- **NewsData.io**: 200 requests/day (free tier)
-- **Weatherstack**: 1000 requests/month (free tier)
-
-### Support
-For technical issues or feature requests, please check the logs in the application or contact the development team.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- Indian Meteorological Department (IMD) for weather data
-- National Disaster Management Authority (NDMA) for disaster alerts
-- Press Information Bureau (PIB) for government communications
-- All news organizations providing crisis information
+- Full multilingual NLP classification and translation integration.
+- More detailed emergency resource data with live updates.
+- User authentication and personalized alert settings.
+- Mobile app integration for wider accessibility.
 
 ---
 
-**CrisisRadar v2.0 Production** - Real-Time Crisis Intelligence for India's Safety
-Built with Python • Powered by AI • Made for India
+Made with ❤️ for India's safety and resilience.

@@ -10,6 +10,8 @@ import feedparser
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
+from language_processor import LanguageProcessor
+
 # Load environment variables
 load_dotenv()
 
@@ -148,6 +150,9 @@ class CrisisRadarSystem:
         self.mediastack_key = os.getenv("MEDIASTACK_KEY")
         self.newsdata_key = os.getenv("NEWSDATA_KEY")
         self.weatherstack_key = os.getenv("WEATHERSTACK_KEY")
+
+        # Initialize LanguageProcessor for multilingual support
+        self.language_processor = LanguageProcessor()
         
         self.crisis_keywords = [
             'flood', 'flooding', 'inundation', 'waterlogging', 'deluge',
@@ -351,10 +356,18 @@ class CrisisRadarSystem:
                 crisis_info = self._classify_crisis(item['title'] + ' ' + item['description'])
                 location = self._extract_location(item['title'] + ' ' + item['description'])
                 coords = self._get_coordinates(location)
+
+                # Detect language and translate title and description to English
+                detected_language = self.language_processor.detect_language(item['title'] + ' ' + item['description'])
+                translated_title = item['title']
+                translated_description = item['description']
+                if detected_language != 'English':
+                    translated_title = self.language_processor.translate_text(item['title'], 'English')
+                    translated_description = self.language_processor.translate_text(item['description'], 'English')
                 
                 crisis_item = {
-                    'title': item['title'],
-                    'description': item['description'],
+                    'title': translated_title,
+                    'description': translated_description,
                     'source': item['source'],
                     'url': item.get('url', ''),
                     'location': location or 'India',
@@ -363,7 +376,10 @@ class CrisisRadarSystem:
                     'crisis_type': crisis_info['type'],
                     'severity': crisis_info['severity'],
                     'confidence': crisis_info['confidence'],
-                    'detected_keywords': ', '.join(crisis_info['keywords'])
+                    'detected_keywords': ', '.join(crisis_info['keywords']),
+                    'original_language': detected_language,
+                    'original_title': item['title'],
+                    'original_description': item['description']
                 }
                 crisis_data.append(crisis_item)
         
@@ -789,8 +805,8 @@ class CrisisRadarSystem:
             logger.error(f"Registration error: {e}")
             return False
 
-def create_india_map(crisis_data, weather_data):
-    """Create enhanced interactive map with detailed visualization"""
+def create_india_map(crisis_data, weather_data, emergency_resources=None):
+    """Create enhanced interactive map with detailed visualization and resource layers"""
     fig = go.Figure()
     
     # Add major Indian cities as base layer
@@ -841,8 +857,7 @@ def create_india_map(crisis_data, weather_data):
                     size=20,
                     color='#FF1744',
                     opacity=0.9,
-                    symbol='circle',
-                    line=dict(width=3, color='#FFFFFF')
+                    symbol='circle'
                 ),
                 text=[f"<b>🚨 HIGH SEVERITY CRISIS</b><br>" +
                       f"<b>Type:</b> {item['crisis_type'].title()}<br>" +
@@ -868,8 +883,7 @@ def create_india_map(crisis_data, weather_data):
                     size=16,
                     color='#FF9800',
                     opacity=0.8,
-                    symbol='circle',
-                    line=dict(width=2, color='#FFFFFF')
+                    symbol='circle'
                 ),
                 text=[f"<b>⚠️ MEDIUM SEVERITY CRISIS</b><br>" +
                       f"<b>Type:</b> {item['crisis_type'].title()}<br>" +
@@ -895,8 +909,7 @@ def create_india_map(crisis_data, weather_data):
                     size=12,
                     color='#FFC107',
                     opacity=0.7,
-                    symbol='circle',
-                    line=dict(width=1, color='#FFFFFF')
+                    symbol='circle'
                 ),
                 text=[f"<b>📋 LOW SEVERITY CRISIS</b><br>" +
                       f"<b>Type:</b> {item['crisis_type'].title()}<br>" +
@@ -921,8 +934,7 @@ def create_india_map(crisis_data, weather_data):
                 size=18,
                 color='#2196F3',
                 opacity=0.8,
-                symbol='diamond',
-                line=dict(width=2, color='#FFFFFF')
+                symbol='diamond'
             ),
             text=[f"<b>🌩️ WEATHER ALERT</b><br>" +
                   f"<b>City:</b> {item['city']}<br>" +
@@ -935,6 +947,36 @@ def create_india_map(crisis_data, weather_data):
             name='Weather Alert',
             showlegend=True
         ))
+    
+    # Add emergency resource markers if provided
+    if emergency_resources:
+        resource_types = {
+            'hospital': {'color': '#2ECC71', 'symbol': 'hospital'},
+            'police': {'color': '#3498DB', 'symbol': 'police'},
+            'shelter': {'color': '#F39C12', 'symbol': 'home'}
+        }
+        
+        for resource_type, resources in emergency_resources.items():
+            if resources:
+                fig.add_trace(go.Scattermapbox(
+                    lat=[res['latitude'] for res in resources],
+                    lon=[res['longitude'] for res in resources],
+                    mode='markers',
+                    marker=dict(
+                        size=14,
+                        color=resource_types.get(resource_type, {}).get('color', '#95A5A6'),
+                        opacity=0.85,
+                        symbol='marker'  # Plotly does not have hospital/police symbols, use default marker
+                    ),
+                    text=[f"<b>{resource_type.title()}</b><br>" +
+                          f"<b>Name:</b> {res.get('name', 'N/A')}<br>" +
+                          f"<b>Address:</b> {res.get('address', 'N/A')}<br>" +
+                          f"<b>Contact:</b> {res.get('contact', 'N/A')}"
+                          for res in resources],
+                    hovertemplate='%{text}<extra></extra>',
+                    name=resource_type.title(),
+                    showlegend=True
+                ))
     
     # Enhanced layout with better styling
     fig.update_layout(
@@ -1046,21 +1088,22 @@ def create_analytics_charts(crisis_data):
         textfont=dict(size=14, color='white')
     )])
     fig_bar.update_layout(
-        title={
-            'text': "Crisis Severity Distribution",
-            'x': 0.5,
-            'xanchor': 'center',
-            'font': {'size': 20, 'color': '#2F3349'}
-        },
-        height=450,
-        xaxis=dict(
-            title="Severity Level",
-            titlefont=dict(size=14),
-            tickfont=dict(size=12)
+       title={
+           'text': "Crisis Severity Distribution",
+           'x': 0.5,
+           'xanchor': 'center',
+           'font': {'size': 20, 'color': '#2F3349'}
+       },
+       height=450,
+       xaxis=dict(
+           title=dict(
+               text="Severity Level",
+               font=dict(size=14)  # Set font size here
+           ),
+           tickfont=dict(size=12)
         ),
         yaxis=dict(
-            title="Number of Events",
-            titlefont=dict(size=14),
+            title=dict(text="Number of Events", font=dict(size=14)),
             tickfont=dict(size=12)
         ),
         showlegend=False,
@@ -1108,12 +1151,10 @@ def create_analytics_charts(crisis_data):
             height=450,
             xaxis=dict(
                 title="Number of Events",
-                titlefont=dict(size=14),
                 tickfont=dict(size=12)
             ),
             yaxis=dict(
                 title="Location",
-                titlefont=dict(size=14),
                 tickfont=dict(size=11)
             ),
             paper_bgcolor='rgba(0,0,0,0)',
@@ -1295,7 +1336,22 @@ def main():
         filtered_crisis = [c for c in filtered_crisis if c.get('confidence', 0) >= confidence_threshold]
         
         if filtered_crisis or st.session_state.weather_data:
-            map_fig = create_india_map(filtered_crisis, st.session_state.weather_data)
+            # Prepare emergency resources data for map
+            emergency_resources = {
+                'hospital': [
+                    {'name': 'AIIMS Delhi', 'address': 'Ansari Nagar, New Delhi', 'contact': '+91-11-26588500', 'latitude': 28.5672, 'longitude': 77.2100},
+                    {'name': 'KEM Hospital Mumbai', 'address': 'Acharya Donde Marg, Mumbai', 'contact': '+91-22-24138500', 'latitude': 19.0176, 'longitude': 72.8562}
+                ],
+                'police': [
+                    {'name': 'Delhi Police HQ', 'address': 'I.P. Estate, New Delhi', 'contact': '+91-11-23456789', 'latitude': 28.6448, 'longitude': 77.2167},
+                    {'name': 'Mumbai Police HQ', 'address': 'Mumbai', 'contact': '+91-22-22620000', 'latitude': 18.9667, 'longitude': 72.8333}
+                ],
+                'shelter': [
+                    {'name': 'Shelter Home Delhi', 'address': 'New Delhi', 'contact': '+91-11-12345678', 'latitude': 28.6139, 'longitude': 77.2090},
+                    {'name': 'Shelter Home Mumbai', 'address': 'Mumbai', 'contact': '+91-22-87654321', 'latitude': 19.0760, 'longitude': 72.8777}
+                ]
+            }
+            map_fig = create_india_map(filtered_crisis, st.session_state.weather_data, emergency_resources)
             st.plotly_chart(map_fig, use_container_width=True)
             
             # Enhanced legend
@@ -1410,6 +1466,8 @@ def main():
                 <p><strong>Ambulance:</strong> 108</p>
                 <p><strong>Disaster Management:</strong> 1078</p>
                 <p><strong>Tourist Helpline:</strong> 1363</p>
+                <p><strong>Emergency Website:</strong> <a href="https://www.ndma.gov.in/" target="_blank">NDMA Official</a></p>
+                <p><strong>Disaster Info Portal:</strong> <a href="https://www.disastermanagement.in/" target="_blank">Disaster Management</a></p>
             </div>
             """, unsafe_allow_html=True)
         
@@ -1422,6 +1480,8 @@ def main():
                 <p><strong>Senior Citizen:</strong> 14567</p>
                 <p><strong>Mental Health:</strong> 9152987821</p>
                 <p><strong>COVID Helpline:</strong> 1075</p>
+                <p><strong>Disaster Relief:</strong> <a href="https://reliefweb.int/" target="_blank">ReliefWeb</a></p>
+                <p><strong>Health Ministry:</strong> <a href="https://www.mohfw.gov.in/" target="_blank">MoHFW</a></p>
             </div>
             """, unsafe_allow_html=True)
         
@@ -1434,6 +1494,7 @@ def main():
                 <p><strong>Highway Emergency:</strong> 1033</p>
                 <p><strong>Aviation Emergency:</strong> 1678</p>
                 <p><strong>Coast Guard:</strong> 1554</p>
+                <p><strong>Transport Safety:</strong> <a href="https://morth.nic.in/" target="_blank">Ministry of Road Transport</a></p>
             </div>
             """, unsafe_allow_html=True)
         
@@ -1472,11 +1533,11 @@ def main():
     st.markdown("---")
     st.markdown(f"""
     <div style="text-align: center; color: #666; padding: 1rem;">
-        <p><strong>CrisisRadar v2.0 - Production</strong> | Real-Time Crisis Intelligence for India</p>
+        <p><strong>CrisisRadar - Production</strong> | Real-Time Crisis Intelligence for India</p>
         <p>System Status: <span style="color: #4CAF50;">🟢 ONLINE</span> | 
            Last Data Collection: {last_update} | 
            Total Events Monitored: {len(st.session_state.crisis_data)}</p>
-        <p>Built with AI • Powered by Multiple APIs • Made for India's Safety</p>
+        <p> Powered by Multiple APIs • Made for India's Safety</p>
     </div>
     """, unsafe_allow_html=True)
 
