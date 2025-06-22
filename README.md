@@ -116,13 +116,8 @@ CrisisRadar is an advanced real-time crisis detection and resource mapping syste
 - All error and success messages are logged in the backend; the frontend remains clean.
 - The project uses free-tier API plans; rate limits may apply.
 
-## Future Enhancements
-
-- Full multilingual NLP classification and translation integration.
-- More detailed emergency resource data with live updates.
-- User authentication and personalized alert settings.
-- Mobile app integration for wider accessibility.
-
 ---
 
 Made with ❤️ for India's safety and resilience.
+#you can see this overall website in:-
+https://crisisradar-fyxdnzwe2m9wtjhhqbqvbh.streamlit.app/
