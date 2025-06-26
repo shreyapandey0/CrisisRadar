@@ -119,5 +119,6 @@ CrisisRadar is an advanced real-time crisis detection and resource mapping syste
 ---
 
 Made with ❤️ for India's safety and resilience.
-#you can see this overall website in:-
-https://crisisradar-fyxdnzwe2m9wtjhhqbqvbh.streamlit.app/
+
+### Live demo
+🌐 [CrisisRadar Dashboard](https://crisisradar-fyxdnzwe2m9wtjhhqbqvbh.streamlit.app)
